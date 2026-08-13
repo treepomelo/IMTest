@@ -1,0 +1,22 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "系统登录中心" }
+    },
+    {
+      "path": "pages/im/index",
+      "style": { "navigationBarTitleText": "IM 通讯测试" }
+    },
+    {
+      "path": "pages/ai-chat/index",
+      "style": { "navigationBarTitleText": "AI 专属助教" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Demo",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  }
+}

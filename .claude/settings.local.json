@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "WebSearch",
+      "WebFetch(domain:web.sdk.qcloud.com)",
+      "Bash(npm -v)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const p=require\\('./node_modules/tim-upload-plugin/package.json'\\); console.log\\('version:', p.version, '| main:', p.main, '| module:', p.module\\)\")",
+      "Bash(grep -rn \"tempFilePaths\\\\|tempFilePath\\\\|tempFiles\" node_modules/@tencentcloud/chat/dist/*.js)",
+      "Bash(grep -oE \".\\\\{0,80\\\\}tempFiles.\\\\{0,160\\\\}\" \"C:\\\\Users\\\\love——ccc\\\\.claude\\\\projects\\\\F---net2026-IMTest\\\\136c7a20-a19b-4bc5-a796-bd0115e6c6de\\\\tool-results\\\\bs0hhq4ye.txt\")",
+      "Bash(grep -oE \"[a-zA-Z0-9_\\\\.]{1,20}tempFiles[a-zA-Z0-9_\\\\.\\\\[\\\\]{}\\\\\"'=:]{1,40}\" \"C:\\\\Users\\\\love——ccc\\\\.claude\\\\projects\\\\F---net2026-IMTest\\\\136c7a20-a19b-4bc5-a796-bd0115e6c6de\\\\tool-results\\\\bs0hhq4ye.txt\")",
+      "Bash(node -e ':*)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('manifest.json','utf8'\\).replace\\(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,''\\).replace\\(/^\\\\s*\\\\/\\\\/.*$/gm,''\\)\\); console.log\\('manifest.json JSON 合法'\\)\")",
+      "Bash(node:*)"
+    ]
+  }
+}
