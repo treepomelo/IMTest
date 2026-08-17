@@ -68,9 +68,15 @@
           <text class="nav-title">{{ chat.currentTargetName }}</text>
           <text class="nav-subtitle" v-if="isCurrentGroup">(ID: {{ realGroupId }} · {{ group.profile?.memberCount || group.memberCount || 0 }}人)</text>
         </view>
-        <!-- 群设置入口 -->
-        <text class="nav-icon right" v-if="isCurrentGroup" @click="openGroupPanel">⚙️</text>
-        <text class="nav-icon right" v-else></text>
+        <!-- 音视频通话入口（仅 H5）：单聊直接呼叫对方，群聊先选择成员 -->
+        <view class="nav-actions">
+          <!-- #ifdef H5 -->
+          <text class="nav-icon right" @click="startCall(TUICallType.AUDIO_CALL)">📞</text>
+          <text class="nav-icon right" @click="startCall(TUICallType.VIDEO_CALL)">📹</text>
+          <!-- #endif -->
+          <text class="nav-icon right" v-if="isCurrentGroup" @click="openGroupPanel">⚙️</text>
+          <text class="nav-icon right" v-else></text>
+        </view>
       </view>
 
       <!-- 消息面板 -->
@@ -293,6 +299,37 @@
       </view>
     </view>
 
+    <!-- #ifdef H5 -->
+    <!-- 4. 群音视频通话：选择成员 -->
+    <view class="modal-mask" v-if="ui.showGroupCallModal" @click="ui.showGroupCallModal = false">
+      <view class="modal-content" @click.stop>
+        <view class="modal-title">{{ ui.groupCallType === TUICallType.AUDIO_CALL ? '群语音通话' : '群视频通话' }} · 选择成员</view>
+        <view class="gc-summary">已选 {{ gcCheckedCount }} 人（不含自己）</view>
+
+        <scroll-view scroll-y class="gc-member-list">
+          <view class="gc-member" v-for="m in groupCallMemberList" :key="m.userID" @click="toggleGroupCallMember(m.userID)">
+            <view class="gc-info">
+              <text class="gc-name">{{ memberName(m) }}</text>
+              <text class="gc-id">{{ m.userID }}</text>
+            </view>
+            <view class="gc-check" :class="{ 'on': ui.groupCallChecked[m.userID] }">{{ ui.groupCallChecked[m.userID] ? '✓' : '' }}</view>
+          </view>
+          <view class="empty-tip" v-if="groupCallMemberList.length === 0">暂无成员可呼叫</view>
+        </scroll-view>
+
+        <view class="modal-actions">
+          <button class="modal-btn cancel" @click="ui.showGroupCallModal = false">取消</button>
+          <button class="modal-btn confirm" @click="confirmGroupCall">发起通话</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 5. TUICallKit 通话界面（仅在通话进行时显示，官方自带 UI） -->
+    <view class="callkit-overlay">
+      <TUICallKit />
+    </view>
+    <!-- #endif -->
+
   </view>
 </template>
 
@@ -300,6 +337,10 @@
 import { reactive, computed, nextTick } from 'vue';
 import { onLoad, onUnload, onShow } from '@dcloudio/uni-app';
 import TencentCloudChat from '@tencentcloud/chat';
+
+// #ifdef H5
+import { TUICallKit, TUICallKitAPI, TUICallType } from '@trtc/calls-uikit-vue';
+// #endif
 
 // ================= 状态管理 (采用成熟框架的模块化分组) =================
 const ui = reactive({
@@ -318,7 +359,10 @@ const ui = reactive({
   inviteMemberId: '',
   scrollTarget: '',
   isRecording: false,
-  recordSeconds: 0
+  recordSeconds: 0,
+  showGroupCallModal: false,  // 群音视频通话成员选择弹窗
+  groupCallType: 1,           // 1=语音 2=视频
+  groupCallChecked: {}        // 已选成员 {userID: true}
 });
 
 const chat = reactive({
@@ -343,6 +387,60 @@ const group = reactive({
 
 // 计算属性：当前是否为群聊环境
 const isCurrentGroup = computed(() => chat.currentConvId.startsWith('GROUP'));
+
+// ================= TUICallKit 音视频通话 =================
+// 当前聊天对象 UserID（单聊直接呼叫；群聊需先选成员）
+const callTargetId = computed(() => chat.currentConvId.replace(isCurrentGroup.value ? 'GROUP' : 'C2C', ''));
+
+const startCall = (type) => {
+  // #ifndef H5
+  uni.showToast({ title: '音视频通话仅支持 H5', icon: 'none' });
+  return;
+  // #endif
+  if (!uni.$callKitReady) {
+    uni.showToast({ title: '音视频组件未就绪，请重新登录', icon: 'none' });
+    return;
+  }
+  if (isCurrentGroup.value) {
+    // 群通话：先选择要邀请的成员
+    ui.groupCallType = type;
+    ui.groupCallChecked = {};
+    if (group.memberList.length === 0) fetchGroupMembers(false);
+    ui.showGroupCallModal = true;
+    return;
+  }
+  // 单聊：校验当前聊天对象，避免空 ID / 呼叫自己
+  const targetId = callTargetId.value;
+  if (!targetId) return uni.showToast({ title: '当前聊天对象无效', icon: 'none' });
+  if (targetId === myUserID) return uni.showToast({ title: '不能呼叫自己', icon: 'none' });
+  // #ifdef H5
+  TUICallKitAPI.calls({ userIDList: [targetId], type });
+  // #endif
+};
+
+const toggleGroupCallMember = (userID) => {
+  ui.groupCallChecked[userID] = !ui.groupCallChecked[userID];
+};
+
+// 群通话可选成员（排除自己）
+const groupCallMemberList = computed(() => group.memberList.filter((m) => m.userID !== myUserID));
+
+const gcCheckedCount = computed(() => Object.values(ui.groupCallChecked).filter(Boolean).length);
+
+const confirmGroupCall = () => {
+  // #ifndef H5
+  uni.showToast({ title: '音视频通话仅支持 H5', icon: 'none' });
+  return;
+  // #endif
+  const list = Object.keys(ui.groupCallChecked).filter((id) => ui.groupCallChecked[id] && id !== myUserID);
+  if (list.length === 0) return uni.showToast({ title: '请至少选择一名成员', icon: 'none' });
+  const groupID = group.profile?.groupID || chat.currentConvId.replace('GROUP', '');
+  if (!groupID) return uni.showToast({ title: '群 ID 无效', icon: 'none' });
+  // #ifdef H5
+  TUICallKitAPI.calls({ userIDList: list, chatGroupID: groupID, type: ui.groupCallType });
+  // #endif
+  ui.showGroupCallModal = false;
+};
 
 // 消息类型常量（模板中直接使用）
 const TYPES = TencentCloudChat.TYPES;
@@ -375,7 +473,14 @@ const myNameCard = computed(() => group.profile?.selfInfo?.nameCard || '');
 // ================= 图片 / 语音消息基础设施 =================
 let recorderTimer = null;
 let audioCtx = null;
+// H5 浏览器不支持 uni 录音 API（uni.getRecorderManager），故置 null 并在触发时提示；
+// 非 H5 保持原有录音逻辑不变
+// #ifdef H5
+let recorderManager = null;
+// #endif
+// #ifndef H5
 const recorderManager = uni.getRecorderManager();
+// #endif
 
 const clearRecorderTimer = () => {
   if (recorderTimer) { clearInterval(recorderTimer); recorderTimer = null; }
@@ -1054,6 +1159,11 @@ const previewImage = (msg) => {
 
 // ================= 语音消息模块 =================
 const toggleRecording = () => {
+  // H5 浏览器不支持 uni 录音 API，直接提示，不触碰 recorderManager
+  if (!recorderManager) {
+    uni.showToast({ title: '浏览器端暂不支持语音消息', icon: 'none' });
+    return;
+  }
   if (ui.isRecording) {
     recorderManager.stop(); // 结束录音
     return;
@@ -1066,6 +1176,7 @@ const toggleRecording = () => {
   recorderManager.start({ duration: 60000, format: 'aac' });
 };
 
+// #ifndef H5
 recorderManager.onStop((res) => {
   ui.isRecording = false;
   clearRecorderTimer();
@@ -1081,6 +1192,7 @@ recorderManager.onError(() => {
   clearRecorderTimer();
   uni.showToast({ title: '录音失败', icon: 'none' });
 });
+// #endif
 
 const sendAudioMessage = async (res) => {
   if (!chat.currentConvId) return;
@@ -1190,6 +1302,22 @@ const formatTime = (timestamp) => {
 .nav-center { flex: 1; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
 .nav-title { font-size: 16px; font-weight: bold; color: #333; }
 .nav-subtitle { font-size: 10px; color: #888; }
+.nav-actions { display: flex; align-items: center; }
+.nav-actions .nav-icon.right { width: 34px; text-align: center; font-size: 19px; }
+
+/* TUICallKit 通话浮层：仅通话时内部才渲染内容，空闲时不遮挡页面 */
+.callkit-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; pointer-events: none; }
+.callkit-overlay > * { pointer-events: auto; }
+
+/* 群通话成员选择 */
+.gc-summary { font-size: 13px; color: #888; margin-bottom: 10px; }
+.gc-member-list { max-height: 300px; }
+.gc-member { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border-bottom: 1px solid #f0f0f0; }
+.gc-info { display: flex; flex-direction: column; }
+.gc-name { font-size: 15px; color: #333; }
+.gc-id { font-size: 12px; color: #999; }
+.gc-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ccc; text-align: center; line-height: 24px; font-size: 14px; color: #fff; flex-shrink: 0; }
+.gc-check.on { background: #07c160; border-color: #07c160; }
 
 .message-board { flex: 1; padding: 15px; box-sizing: border-box; }
 .msg-row { display: flex; margin-bottom: 20px; align-items: flex-start; }

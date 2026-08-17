@@ -32,4 +32,5 @@ app.UseCors("AllowAll");
 app.MapControllers();
 
 // 【关键优化】：绑定 0.0.0.0，允许局域网内的其他设备（如真机、微信模拟器）通过 IPv4 地址访问
-app.Run("http://0.0.0.0:5000");
+// 端口 8001 与前端 common/config.js 的默认端口保持一致
+app.Run("http://0.0.0.0:8001");

@@ -3,7 +3,7 @@
  *   USE_SERVER = true  → 使用 SERVER 配置
  *   USE_SERVER = false → 使用 LOCAL 配置
  */
-const USE_SERVER = true;
+const USE_SERVER = false;
 
 const LOCAL = {
   host: '127.0.0.1',

@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@tencentcloud/chat": "^3.6.6",
+    "@trtc/calls-uikit-vue": "^4.5.5",
     "tim-upload-plugin": "^1.4.3"
   },
   "name": "imtest",

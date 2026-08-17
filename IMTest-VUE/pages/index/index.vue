@@ -35,8 +35,12 @@ import TencentCloudChat from '@tencentcloud/chat';
 import TIMUploadPlugin from 'tim-upload-plugin';
 import { BASE_URL } from '../../common/config.js';
 
+// #ifdef H5
+import { TUICallKitAPI } from '@trtc/calls-uikit-vue';
+// #endif
+
 // ⚠️ 替换为你真实的 SDKAppID
-const SDKAppID = 1600156373;
+const SDKAppID = 1600156858;
 const getSigApiUrl = `${BASE_URL}/api/im/get-usersig`;
 
 const loginUserId = ref('test_user_1');
@@ -71,7 +75,20 @@ const handleLogin = async () => {
     
     // 4. 将 UserId 也存入全局，方便 AI 页面扣费时使用
     uni.setStorageSync('currentUserId', loginUserId.value);
-    
+
+    // 5. 初始化 TUICallKit（音视频通话），复用当前 IM 登录态，不阻塞登录流程
+    // #ifdef H5
+    TUICallKitAPI.init({ userID: loginUserId.value, userSig, SDKAppID, tim: uni.$chat })
+      .then(() => {
+        TUICallKitAPI.setLanguage('zh-cn');
+        uni.$callKitReady = true;
+      })
+      .catch((err) => {
+        console.error('TUICallKit init failed:', err);
+        uni.$callKitReady = false;
+      });
+    // #endif
+
     uni.hideLoading();
     isLogin.value = true;
     
@@ -83,6 +100,10 @@ const handleLogin = async () => {
 };
 
 const handleLogout = async () => {
+  // #ifdef H5
+  try { if (uni.$callKitReady) await TUICallKitAPI.destroyed(); } catch (e) { console.error(e); }
+  uni.$callKitReady = false;
+  // #endif
   if (uni.$chat) await uni.$chat.logout();
   uni.removeStorageSync('currentUserId');
   isLogin.value = false;

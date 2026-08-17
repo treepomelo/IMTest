@@ -12,7 +12,24 @@
       "Bash(grep -oE \"[a-zA-Z0-9_\\\\.]{1,20}tempFiles[a-zA-Z0-9_\\\\.\\\\[\\\\]{}\\\\\"'=:]{1,40}\" \"C:\\\\Users\\\\love——ccc\\\\.claude\\\\projects\\\\F---net2026-IMTest\\\\136c7a20-a19b-4bc5-a796-bd0115e6c6de\\\\tool-results\\\\bs0hhq4ye.txt\")",
       "Bash(node -e ':*)",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('manifest.json','utf8'\\).replace\\(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,''\\).replace\\(/^\\\\s*\\\\/\\\\/.*$/gm,''\\)\\); console.log\\('manifest.json JSON 合法'\\)\")",
-      "Bash(node:*)"
-    ]
+      "Bash(node:*)",
+      "Bash(wc -l types/*.d.ts)",
+      "Bash(xargs ls:*)",
+      "Bash(ls src/Components/)",
+      "Bash(ls debug/)",
+      "Bash(grep -o \"init\\(params\\)[^}]\\\\{0,60\\\\}\" tuicall-uikit-vue.es.js)",
+      "Bash(grep -o \"init:function[^}]\\\\{0,80\\\\}\\\\|async init[^}]\\\\{0,80\\\\}\" tuicall-uikit-vue.es.js)",
+      "Bash(grep -o \".\\\\{120\\\\}_loadWasm\\(\\),\" tuicall-uikit-vue.es.js)",
+      "Bash(grep -o \".\\\\{150\\\\}bindTUICore.\\\\{0,150\\\\}\" tuicall-uikit-vue.es.js)",
+      "Bash(grep -o \".\\\\{80\\\\}_loadWasm\\(\\).\\\\{0,80\\\\}\" tuicall-uikit-vue.es.js)",
+      "Bash(ls README*)",
+      "Bash(ls *.md)",
+      "Bash(ls vite.config.*)",
+      "Bash(ls *.config.*)",
+      "Bash(ls node_modules/@dcloudio)",
+      "Bash(grep -l \"uni\" package.json)",
+      "Bash(ls -la publish/*.dll publish/*.exe)"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }
